@@ -43,8 +43,8 @@ namespace AuthTask.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Validate(string username, string password, string returnUrl)
-        //public async Task<IActionResult> Validate(string username, string password,string returnUrl)
+        //public IActionResult Validate(string username, string password, string returnUrl)
+        public async Task<IActionResult> Validate(string username, string password,string returnUrl)
         {
             //ViewData["ReturnUrl"] = returnUrl;
             if (username != "bob" && password != "ok")
@@ -54,14 +54,14 @@ namespace AuthTask.Controllers
                
             }
             //TempData["Error"] = "eRROR. Username or Password is invalid";
-           // var claims = new List<Claim>();//properties that describe a user: from actions to atrributes
+           var claims = new List<Claim>();//properties that describe a user: from actions to atrributes
 
-            //claims.Add(new Claim("username", username));
-           // claims.Add(new Claim(ClaimTypes.NameIdentifier, username));
+           claims.Add(new Claim("username", username));
+           claims.Add(new Claim(ClaimTypes.NameIdentifier, username));
 
-            //var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-           // var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);//authentication ticket
-           // await HttpContext.SignInAsync(claimsPrincipal);
+           var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+           var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);//authentication ticket
+           await HttpContext.SignInAsync(claimsPrincipal);
            return Redirect(returnUrl);
            //return View("Secured");
 

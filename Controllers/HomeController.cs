@@ -38,38 +38,51 @@ namespace AuthTask.Controllers
         {
 
             // after post login, we need to return the user to the intended page i.e the return url
-            ViewData["ReturnUrl"] = returnUrl;
+            //ViewData["ReturnUrl"] = returnUrl; 
             return View();
         }
 
         [HttpPost("login")]
-        //public IActionResult Validate(string username, string password, string returnUrl)
         public async Task<IActionResult> Validate(string username, string password,string returnUrl)
         {
-            //ViewData["ReturnUrl"] = returnUrl;
-            if (username != "bob" && password != "ok")
+           // Console.WriteLine(username, password);
+            
+            if (username == "bob" && password == "ok")
             {
+                
+                //ViewData["ReturnUrl"] = returnUrl;
+                var claims = new List<Claim>
+                {
+                    new Claim("username", username),
+                    new Claim(ClaimTypes.NameIdentifier, username),
+                    new Claim(ClaimTypes.Name, "Mr")
+                };//properties that describe a user: from actions to atrributes
 
-                return BadRequest();
-               
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);//authentication ticket
+                await HttpContext.SignInAsync(claimsPrincipal);
+                //return Redirect(returnUrl);
+                return View("Secured");
             }
-            //TempData["Error"] = "eRROR. Username or Password is invalid";
-           var claims = new List<Claim>();//properties that describe a user: from actions to atrributes
 
-           claims.Add(new Claim("username", username));
-           claims.Add(new Claim(ClaimTypes.NameIdentifier, username));
+            TempData["Error"] = "ERROR. Username or Password is invalid";
 
-           var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-           var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);//authentication ticket
-           await HttpContext.SignInAsync(claimsPrincipal);
-           return Redirect(returnUrl);
-           //return View("Secured");
-
+            return View("login");
+           // return BadRequest();
         }
 
         public IActionResult Privacy()
         {
             return View();
+        }
+
+        [Authorize] //you need to be logged in to log out
+        public async Task<IActionResult> Logout()
+        {
+            //User.Identity.IsAuthenticated = false;
+            await HttpContext.SignOutAsync();
+            
+            return View("/");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -38,7 +38,7 @@ namespace AuthTask.Controllers
         {
 
             // after post login, we need to return the user to the intended page i.e the return url
-            //ViewData["ReturnUrl"] = returnUrl; 
+            ViewData["ReturnUrl"] = returnUrl; 
             return View();
         }
 
@@ -61,8 +61,8 @@ namespace AuthTask.Controllers
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);//authentication ticket
                 await HttpContext.SignInAsync(claimsPrincipal);
-                //return Redirect(returnUrl);
-                return View("Secured");
+                return Redirect(returnUrl);
+                //return View("Secured");
             }
 
             TempData["Error"] = "ERROR. Username or Password is invalid";
@@ -82,7 +82,7 @@ namespace AuthTask.Controllers
             //User.Identity.IsAuthenticated = false;
             await HttpContext.SignOutAsync();
             
-            return View("/");
+            return Redirect("/");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

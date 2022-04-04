@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace AuthTask
@@ -29,6 +30,34 @@ namespace AuthTask
                 .AddCookie(options =>
                 {
                     options.LoginPath = "/login";
+                    options.AccessDeniedPath = "/denied";
+                    options.Events = new CookieAuthenticationEvents()
+                    {
+                        //before the authentication ticket is created, assign the role to a nameidentifier value of bob, or you can simply hard code
+                        //the roles value to bob in the controller by adding it to the claims list, can only be one or the other
+                        OnSigningIn = async context =>
+                        {
+                            var principal = context.Principal;
+                            if(principal.HasClaim(c=> c.Type == ClaimTypes.NameIdentifier))//inspecting the claim to see if the principal in question has a nameIdentifier
+                            {
+                                if (principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value == "bob")
+                                {
+                                    //get the identity, cast as ClaimsIdentity and adding the Role claim to it
+                                    var claimsIdentity = principal.Identity as ClaimsIdentity;
+                                    claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+                                }
+                            }
+                            await Task.CompletedTask;
+                        },
+                        OnSignedIn = async context =>
+                        {
+                            await Task.CompletedTask;
+                        },
+                        OnValidatePrincipal = async context => //fires on every single request
+                        {
+                            await Task.CompletedTask;
+                        }
+                    };
                 });
         }
 
@@ -50,6 +79,7 @@ namespace AuthTask
 
             app.UseRouting();
 
+            
             app.UseAuthentication();
             app.UseAuthorization();
 

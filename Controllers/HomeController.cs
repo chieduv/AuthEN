@@ -27,7 +27,7 @@ namespace AuthTask.Controllers
             return View();
         }
 
-        [Authorize]
+        [Authorize(Roles ="Admin")]
         public IActionResult Secured()
         {
             return View();
@@ -56,6 +56,7 @@ namespace AuthTask.Controllers
                     new Claim("username", username),
                     new Claim(ClaimTypes.NameIdentifier, username),
                     new Claim(ClaimTypes.Name, "Mr")
+                    //, new Claim(ClaimTypes.Role, "Admin)
                 };//properties that describe a user: from actions to atrributes
 
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -76,10 +77,16 @@ namespace AuthTask.Controllers
             return View();
         }
 
+        [HttpGet("denied")]
+        public IActionResult Denied()
+        {
+            return View();
+        }
+
         [Authorize] //you need to be logged in to log out
         public async Task<IActionResult> Logout()
         {
-            //User.Identity.IsAuthenticated = false;
+            
             await HttpContext.SignOutAsync();
             
             return Redirect("/");

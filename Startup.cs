@@ -37,16 +37,16 @@ namespace AuthTask
                         //the roles value to bob in the controller by adding it to the claims list, can only be one or the other
                         OnSigningIn = async context =>
                         {
-                            var principal = context.Principal;
-                            if(principal.HasClaim(c=> c.Type == ClaimTypes.NameIdentifier))//inspecting the claim to see if the principal in question has a nameIdentifier
-                            {
-                                if (principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value == "bob")
-                                {
-                                    //get the identity, cast as ClaimsIdentity and adding the Role claim to it
-                                    var claimsIdentity = principal.Identity as ClaimsIdentity;
-                                    claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
-                                }
-                            }
+                            //var principal = context.Principal;
+                            //if(principal.HasClaim(c=> c.Type == ClaimTypes.NameIdentifier))//inspecting the claim to see if the principal in question has a nameIdentifier
+                            //{
+                            //    if (principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value == "bo")
+                            //    {
+                            //        //get the identity, cast as ClaimsIdentity and adding the Role claim to it
+                            //        var claimsIdentity = principal.Identity as ClaimsIdentity;
+                            //        claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+                            //    }
+                            //}
                             await Task.CompletedTask;
                         },
                         OnSignedIn = async context =>

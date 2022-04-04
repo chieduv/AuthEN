@@ -27,8 +27,7 @@ namespace AuthTask.Controllers
             return View();
         }
 
-        [Authorize(Roles ="Admin")] //used when the claims is edited here in controller. assigning diff perm to diff users
-        //[Authorize]
+        [Authorize]
         public IActionResult Secured()
         {
             return View();
@@ -56,8 +55,7 @@ namespace AuthTask.Controllers
                 {
                     new Claim("username", username),
                     new Claim(ClaimTypes.NameIdentifier, username),
-                    new Claim(ClaimTypes.Name, "Mr"),
-                    new Claim(ClaimTypes.Role, "Admin")
+                    new Claim(ClaimTypes.Name, "Mr")
                 };//properties that describe a user: from actions to atrributes
 
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

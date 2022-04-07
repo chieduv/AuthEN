@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -26,39 +27,48 @@ namespace AuthTask
         public void ConfigureServices(IServiceCollection services) //part of ms built in dependency injection system authentication is setuo here
         {
             services.AddControllersWithViews();
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = "GoogleOpenID";
+
+
+            })
                 .AddCookie(options =>
                 {
                     options.LoginPath = "/login";
                     options.AccessDeniedPath = "/denied";
-                    options.Events = new CookieAuthenticationEvents()
+                })
+
+                .AddOpenIdConnect("GoogleOpenID", options =>
+                {
+                    options.Authority = "https://accounts.google.com";
+                    options.ClientId = "650092115932-aa9j0agmg6htq48jc8boeg57m7qo64vb.apps.googleusercontent.com";
+                    options.ClientSecret = "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";
+                    options.CallbackPath = "/auth";
+                    options.SaveTokens = true;
+                    options.Events = new Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectEvents()
                     {
-                        //before the authentication ticket is created, assign the role to a nameidentifier value of bob, or you can simply hard code
-                        //the roles value to bob in the controller by adding it to the claims list, can only be one or the other
-                        OnSigningIn = async context =>
+                        OnTokenValidated = async context =>
                         {
-                            var principal = context.Principal;
-                            if (principal.HasClaim(c => c.Type == ClaimTypes.NameIdentifier))//inspecting the claim to see if the principal in question has a nameIdentifier
+                            //assigning the role to a user based on the unique google name identifier
+                            if (context.Principal.Claims.FirstOrDefault(c=> c.Type ==ClaimTypes.NameIdentifier).Value == "109043313742709501133")
                             {
-                                if (principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value == "bob")
-                                {
-                                    //get the identity, cast as ClaimsIdentity and adding the Role claim to it
-                                    var claimsIdentity = principal.Identity as ClaimsIdentity;
-                                    claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
-                                }
+                                var claim = new Claim(ClaimTypes.Role, "Admin");
+                                var claimsIdentity = context.Principal.Identity as ClaimsIdentity;
+                                claimsIdentity.AddClaim(claim);
                             }
-                            await Task.CompletedTask;
-                        },
-                        OnSignedIn = async context =>
-                        {
-                            await Task.CompletedTask;
-                        },
-                        OnValidatePrincipal = async context => //fires on every single request
-                        {
-                            await Task.CompletedTask;
+                            
                         }
                     };
                 });
+
+                //.AddGoogle(options =>
+                //{
+                //    options.ClientId = "650092115932-aa9j0agmg6htq48jc8boeg57m7qo64vb.apps.googleusercontent.com";
+                //    options.ClientSecret = "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";
+                //    options.CallbackPath = "/auth";
+                //});
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

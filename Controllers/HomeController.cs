@@ -27,9 +27,10 @@ namespace AuthTask.Controllers
             return View();
         }
 
-        [Authorize]
-        public IActionResult Secured()
+        [Authorize(Roles ="Admin")]
+        public async Task<IActionResult> Secured()
         {
+            var idToken = await HttpContext.GetTokenAsync("id_token");
             return View();
         }
 
@@ -87,8 +88,10 @@ namespace AuthTask.Controllers
         {
             
             await HttpContext.SignOutAsync();
+            //return Redirect("/"); //return to th home page
             
-            return Redirect("/");
+            // to signout of google on logout and return to local host
+            return Redirect(@"https://google.com/accounts/logout?continue=https://appengine.google.com/_ah/logout?continue=https://localhost:5001");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

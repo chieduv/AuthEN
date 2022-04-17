@@ -16,18 +16,21 @@ namespace AuthTask.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly UserService _userService;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, UserService userService)
         {
             _logger = logger;
+            _userService = userService;
         }
+        
 
         public IActionResult Index()
         {
             return View();
         }
 
-        [Authorize(Roles ="Admin")]
+       [Authorize(Roles ="Admin")]
         public async Task<IActionResult> Secured()
         {
             var idToken = await HttpContext.GetTokenAsync("id_token");
@@ -43,35 +46,46 @@ namespace AuthTask.Controllers
             return View();
         }
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Validate(string username, string password,string returnUrl)
+        [HttpGet("login/{provider}")]
+        public IActionResult LoginExternal([FromRoute]string provider, [FromQuery]string returnUrl)
         {
-           // Console.WriteLine(username, password);
-            
-            if (username == "bob" && password == "ok")
+            if (User != null && User.Identities.Any(identity => identity.IsAuthenticated)) 
             {
-                
-                //ViewData["ReturnUrl"] = returnUrl;
-                var claims = new List<Claim>
-                {
-                    new Claim("username", username),
-                    new Claim(ClaimTypes.NameIdentifier, username),
-                    new Claim(ClaimTypes.Name, "Mr")
-                };//properties that describe a user: from actions to atrributes
-
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);//authentication ticket
-                await HttpContext.SignInAsync(claimsPrincipal);
-                return Redirect(returnUrl);
-                //return View("Secured");
+                RedirectToAction("", "Home");
             }
+            //By default the client will be redirected back yo the URL that issued the challenge (/login?authtype=foo)'
+            //send them to the homepage instead (/)
 
-            TempData["Error"] = "ERROR. Username or Password is invalid";
-
-            return View("login");
-           // return BadRequest();
+            returnUrl = string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl;
+            var authenticationProperties = new AuthenticationProperties { RedirectUri = returnUrl }; 
+             
+            return new ChallengeResult(provider, authenticationProperties);
         }
 
+        [ValidateAntiForgeryToken()]
+        [Route("validate")]
+        [HttpPost]
+        public async Task<IActionResult> Validate(string username, string password, string returnUrl)
+        {
+            returnUrl = string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl;
+            ViewData["ReturnUrl"] = returnUrl;
+            if (_userService.TryValidateUser(username, password, out List<Claim> claims))
+            {
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+                var items = new Dictionary<string, string>();
+                items.Add(".AuthScheme", CookieAuthenticationDefaults.AuthenticationScheme);
+                var properties = new AuthenticationProperties(items);
+                await HttpContext.SignInAsync(claimsPrincipal, properties);
+                return Redirect(returnUrl);
+            }
+            else
+            {
+                TempData["Error"] = "Error. Username or Password is invalid";
+                return View("login");
+            }
+        }
+        
         public IActionResult Privacy()
         {
             return View();
@@ -90,7 +104,7 @@ namespace AuthTask.Controllers
             await HttpContext.SignOutAsync();
             //return Redirect("/"); //return to th home page
             
-            // to signout of google on logout and return to local host
+            // to signout of google on logout and return to local host google uses a unique way to logout
             return Redirect(@"https://google.com/accounts/logout?continue=https://appengine.google.com/_ah/logout?continue=https://localhost:5001");
         }
 

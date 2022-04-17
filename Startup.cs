@@ -30,7 +30,8 @@ namespace AuthTask
             services.AddAuthentication(options =>
             {
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = "GoogleOpenID";
+                
+                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
 
             })
@@ -38,9 +39,19 @@ namespace AuthTask
                 {
                     options.LoginPath = "/login";
                     options.AccessDeniedPath = "/denied";
+                    options.Events = new CookieAuthenticationEvents()
+                    {
+                        OnSigningIn = async context =>
+                        {
+                            var scheme = context.Properties.Items.Where(k=>k.Key ==".AuthScheme ").FirstOrDefault();
+                            var claim = new Claim(scheme.Key, scheme.Value);
+                            var claimsIdentity = context.Principal.Identity as ClaimsIdentity;
+                            claimsIdentity.AddClaim(claim);
+                        }
+                    };  
                 })
 
-                .AddOpenIdConnect("GoogleOpenID", options =>
+                .AddOpenIdConnect("google", options =>
                 {
                     options.Authority = "https://accounts.google.com";
                     options.ClientId = "650092115932-aa9j0agmg6htq48jc8boeg57m7qo64vb.apps.googleusercontent.com";
@@ -52,16 +63,25 @@ namespace AuthTask
                         OnTokenValidated = async context =>
                         {
                             //assigning the role to a user based on the unique google name identifier
-                            if (context.Principal.Claims.FirstOrDefault(c=> c.Type ==ClaimTypes.NameIdentifier).Value == "109043313742709501133")
+                            if (context.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value == "109043313742709501133")
                             {
                                 var claim = new Claim(ClaimTypes.Role, "Admin");
                                 var claimsIdentity = context.Principal.Identity as ClaimsIdentity;
                                 claimsIdentity.AddClaim(claim);
                             }
-                            
-                        }
+
+                        } 
                     };
-                });
+                })
+                .AddOpenIdConnect("okta", options =>
+                {
+                    options.Authority = "https://dev-49918587.okta.com/oauth2/default";
+                    options.ClientId = "0oa4n2v6varhxArOI5d7";
+                    options.ClientSecret = "khLdLkvMZCYZlQpLsMv5TEGrjAK56lwhWvVt0DZC";
+                    options.CallbackPath = "/okta-auth";
+                    options.ResponseType = "code"; 
+                })
+                ;
 
                 //.AddGoogle(options =>
                 //{
